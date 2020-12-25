@@ -85,22 +85,9 @@ class Trackball(object):
     
     def get_interrupt( self ):
         """Get the trackball interrupt status."""
-        # Only support the software version
+        # Only support the software interrupt version
         data  =  self.REG_INT
         return ( data &  self.MSK_INT_TRIGGERED ) == self.MSK_INT_TRIGGERED
-    
-    def _wait_for_flash(self):
-        t_start  =  time.time()
-        while  self.get_interrupt():
-            if  time.time() -  t_start  >  self._timeout:
-                raise  RuntimeError ( "Timed out waiting for interrupt!" )
-            time.sleep( 0.001 )
-
-        t_start  = time.time()
-        while  not  self.get_interrupt():
-            if  time.time() -  t_start  >  self._timeout :
-                raise  RuntimeError ( "Timed out waiting for interrupt!" )
-            time.sleep( 0.001 )
 
     def set_red( self , value ):
         """Set brightness of trackball red LED."""

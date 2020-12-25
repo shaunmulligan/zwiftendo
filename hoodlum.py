@@ -30,15 +30,14 @@ trackball.set_rgbw(0, 254, 0, 0)
 # Use default HID descriptor
 hid = HIDService()
 bat = BatteryService()
-device_info = DeviceInfoService(
-    software_revision=adafruit_ble.__version__, manufacturer="Adafruit Industries"
-)
+device_info = DeviceInfoService(software_revision=adafruit_ble.__version__, manufacturer="endurance engineer")
 advertisement = ProvideServicesAdvertisement(hid)
 advertisement.appearance = 961
 scan_response = Advertisement()
-
 ble = adafruit_ble.BLERadio()
 ble.name = "hoodlum"
+
+# TODO: move battery checking to loop
 bat.level = 69
 if ble.connected:
     for c in ble.connections:
