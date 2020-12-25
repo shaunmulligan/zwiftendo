@@ -1,8 +1,6 @@
 """
-This example acts as a keyboard to peer devices.
+Hoodlum is a bluetooth keyboard for controlling zwift and music
 """
-
-# import board
 import sys
 import time
 
