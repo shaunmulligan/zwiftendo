@@ -1,6 +1,14 @@
 ## ToDo:
-- ~~implement bluetooth HID~~
+- Use https://circuitpython.readthedocs.io/projects/hid/en/latest/api.html#adafruit-hid-consumer-control-consumercontrol for audio control.
 - convert trackball.py to mpy to reduce resource usage: https://learn.adafruit.com/micropython-for-samd21/frozen-modules 
+
+Try this write byte method, and write a trackball module similar to https://github.com/adafruit/Adafruit_CircuitPython_LIS3DH/blob/master/adafruit_lis3dh.py
+```
+    def _write_register_byte(self, register, value):
+        self._buffer[0] = register & 0xFF
+        self._buffer[1] = value & 0xFF
+        self._i2c.writeto(self.address, self._buffer[0:2])
+```
 
 ## Bluetooth HID:
 Next thing to try is: https://wiki.makerdiary.com/nrf52840-m2-devkit/python/examples/ble-keyboard/ which will need to be on the nrf5240 board because circuitpython is not supported on esp32 from what I gather.
