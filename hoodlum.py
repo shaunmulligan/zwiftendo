@@ -28,7 +28,10 @@ trackball.set_rgbw(0, 254, 0, 0)
 # Use default HID descriptor
 hid = HIDService()
 bat = BatteryService()
-device_info = DeviceInfoService(software_revision=adafruit_ble.__version__, manufacturer="endurance engineer")
+# device_info seems to throw an error on circuitpython v6.1.0+beta2
+# device_info = DeviceInfoService(
+#     software_revision=adafruit_ble.__version__, manufacturer="Adafruit Industries"
+# )
 advertisement = ProvideServicesAdvertisement(hid)
 advertisement.appearance = 961
 scan_response = Advertisement()
