@@ -1,5 +1,5 @@
 """
-Hoodlum is a bluetooth keyboard for controlling zwift and music
+Zwiftendo is a bluetooth keyboard for controlling zwift and music
 """
 import sys
 import time
@@ -36,7 +36,7 @@ advertisement = ProvideServicesAdvertisement(hid)
 advertisement.appearance = 961
 scan_response = Advertisement()
 ble = adafruit_ble.BLERadio()
-ble.name = "hoodlum"
+ble.name = "Zwiftendo"
 
 # TODO: move battery checking to loop
 bat.level = 69
@@ -53,7 +53,7 @@ kl = KeyboardLayoutUS(k)
 while True:
     while not ble.connected:
         pass
-    print("Hoodlum Running:")
+    print("Zwiftendo Running:")
     while ble.connected:
         trackball.set_rgbw(0, 0, 254, 0)
         up, down, left, right, switch, state = trackball.read()
