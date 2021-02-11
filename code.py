@@ -18,12 +18,24 @@ from adafruit_ble.services.standard.device_info import DeviceInfoService
 from adafruit_ble.services.standard import BatteryService
 
 from board import I2C
+import board
+from digitalio import DigitalInOut, Direction, Pull
 from pimoroni_trackball import Trackball
 
 # Setup i2c bus and trackball instance
 i2c = I2C() 
 trackball = Trackball( i2c )
 trackball.set_rgbw(0, 254, 0, 0)
+
+# Setup button 1 (btn1) on digital pin 9
+btn1 = DigitalInOut(board.D9)
+btn1.direction = Direction.INPUT
+btn1.pull = Pull.UP
+
+# Setup button 2 (btn2) on digital pin 10
+btn2 = DigitalInOut(board.D10)
+btn2.direction = Direction.INPUT
+btn2.pull = Pull.UP
 
 # Use default HID descriptor
 hid = HIDService()
@@ -58,14 +70,26 @@ while True:
         trackball.set_rgbw(0, 0, 254, 0)
         up, down, left, right, switch, state = trackball.read()
         if state:
+            # Press enter
+            k.send(Keycode.ENTER)
+        if not btn2.value:
+            # Play or Pause media
             consumer_control.send(ConsumerControlCode.PLAY_PAUSE)
-        if up > 10:
+        if not btn1.value:
+            # Skip to next track on media
             consumer_control.send(ConsumerControlCode.SCAN_NEXT_TRACK)
-        if left > 10:
+        if up > 10:
+            # Press up arrow key
             k.send(Keycode.UP_ARROW)
-        if right > 10:
+        if down > 10:
+            # Press down arrow key
             k.send(Keycode.DOWN_ARROW)
+        if left > 10:
+            # Press left arrow key
+            k.send(Keycode.LEFT_ARROW)
+        if right > 10:
+            k.send(Keycode.RIGHT_ARROW)
         
-        time.sleep(0.2)
+        time.sleep(0.1)
     ble.start_advertising(advertisement)
     trackball.set_rgbw(0, 254, 0, 0)
