@@ -13,6 +13,6 @@ To run correctly, this code needs you to have a copy of the following libraries 
 
 ### Usage:
 
-Connect the nRF52840 Express to your laptop and copy code.py, pimoroni_trackball.py and the above mentioned libraries to the CIRCUITPYTHON drive. Connect up the Trackball i2c pins to the nRF53840 SCL and SDA pins. Make sure to add a 10k pull-up resistor as there are no internal ones on the i2c bus.
+Connect the nRF52840 Express to your laptop and copy `code.py`, `pimoroni_trackball.py` and the above mentioned libraries to the `CIRCUITPYTHON` drive. Connect up the Trackball i2c pins to the nRF53840 SCL and SDA pins. Make sure to add a 10k pull-up resistor as there are no internal ones on the i2c bus. Wire up 2 buttons from D9 and D10 to ground.
 
-Once powered up, the device will be discoverable as a bluetooth keyboard called Zwiftendo. Once paired, the green LED at the centre of the trackball will turn blue and now when you swipe up and down it will scroll your screen up and down. Swiping right will skip your media forward and pushing the central button should play or pause your media.
+Once powered up, the device will be discoverable as a bluetooth keyboard called `Zwiftendo`. Once paired, the green LED at the centre of the trackball will turn blue.  Now when you swipe up or down it will scroll your screen up and down. Clicking the central button will send an `ENTER`. Pressing button 1 will skip your media forward and button 2 should play or pause your media.
