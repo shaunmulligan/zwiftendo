@@ -27,15 +27,30 @@ i2c = I2C()
 trackball = Trackball( i2c )
 trackball.set_rgbw(0, 254, 0, 0)
 
-# Setup button 1 (btn1) on digital pin 9
-btn1 = DigitalInOut(board.D9)
-btn1.direction = Direction.INPUT
-btn1.pull = Pull.UP
+# Setup button 1 (startBtn) on digital pin 9
+startBtn = DigitalInOut(board.D9)
+startBtn.direction = Direction.INPUT
+startBtn.pull = Pull.UP
 
 # Setup button 2 (btn2) on digital pin 10
 btn2 = DigitalInOut(board.D10)
 btn2.direction = Direction.INPUT
 btn2.pull = Pull.UP
+
+# Setup button 3 (btn3) on digital pin 11
+btn3 = DigitalInOut(board.D11)
+btn3.direction = Direction.INPUT
+btn3.pull = Pull.UP
+
+# Setup button 4 (btn4) on digital pin 12
+btn4 = DigitalInOut(board.D12)
+btn4.direction = Direction.INPUT
+btn4.pull = Pull.UP
+
+# Setup button 5 (btn2) on digital pin 13
+btn5 = DigitalInOut(board.D13)
+btn5.direction = Direction.INPUT
+btn5.pull = Pull.UP
 
 # Use default HID descriptor
 hid = HIDService()
@@ -75,9 +90,16 @@ while True:
         if not btn2.value:
             # Play or Pause media
             consumer_control.send(ConsumerControlCode.PLAY_PAUSE)
-        if not btn1.value:
+        if not btn3.value:
             # Skip to next track on media
             consumer_control.send(ConsumerControlCode.SCAN_NEXT_TRACK)
+        if not btn4.value:
+            # Press space bar to trigger powerUp
+            k.send(Keycode.SPACEBAR)
+        if not btn5.value:
+            # Press TAB to skip workout block
+            k.send(Keycode.TAB)
+        # Logic for Trackball directions
         if up > 10:
             # Press up arrow key
             k.send(Keycode.UP_ARROW)
