@@ -32,3 +32,10 @@ list files
 >>> import os                                                                   
 >>> os.listdir() 
 ```
+
+### Apple Script Setup:
+
+how to launch an applescript from a keyboard shortcut? https://apple.stackexchange.com/a/276839
+
+Had a problem with making the zwift initial laucher window click the "Let's Go" button, had to hack around it by clicking the menu items as here: https://apple.stackexchange.com/questions/350940/use-applescript-to-raise-and-focus-on-window 
+
