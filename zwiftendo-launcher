@@ -1,0 +1,37 @@
+# Invoke Spotify to open
+open location "spotify"
+
+# Make sure we have the spotify-application on front and in focus
+tell application "Spotify"
+	activate
+	# start playing Zwift FTP smasher playlist
+	play track "spotify:playlist:6z8HXp2HUhaotHBzsWGoAY"
+end tell
+
+# Start the Zwift launcher
+tell application "Zwift" to activate
+
+tell application "System Events"
+	# Wait until the Zwift game itself starts
+	repeat until (exists process "Zwift")
+		delay 1
+	end repeat
+	
+	tell process "Zwift"
+		# make Zwift the active window
+		set frontmost to true
+		click (first menu item whose name contains "Zwift") of menu "Window" of menu bar 1
+		
+		delay 3
+		keystroke return
+		
+		# Wait until the main game window is available
+		repeat until (exists window 1)
+			delay 1
+		end repeat
+		
+		
+		# set full screen
+		set value of attribute "AXFullScreen" of window 1 to true
+	end tell
+end tell
