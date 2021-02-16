@@ -84,9 +84,9 @@ while True:
     while ble.connected:
         trackball.set_rgbw(0, 0, 254, 0)
         up, down, left, right, switch, state = trackball.read()
-        if state:
-            # Press enter
-            k.send(Keycode.ENTER)
+        if not startBtn.value:
+            # If we get a start, trigger applescript on laptop with key combo `ctrl`+`shift`+`=`.
+            k.send(Keycode.CONTROL, Keycode.SHIFT, Keycode.EQUALS)
         if not btn2.value:
             # Play or Pause media
             consumer_control.send(ConsumerControlCode.PLAY_PAUSE)
@@ -99,17 +99,20 @@ while True:
         if not btn5.value:
             # Press TAB to skip workout block
             k.send(Keycode.TAB)
-        # Logic for Trackball directions
-        if up > 10:
+        # Logic for Trackball controller
+        if state:
+            # Press enter
+            k.send(Keycode.ENTER)
+        if left > 10:
             # Press up arrow key
             k.send(Keycode.UP_ARROW)
-        if down > 10:
+        if right > 10:
             # Press down arrow key
             k.send(Keycode.DOWN_ARROW)
-        if left > 10:
+        if down > 10:
             # Press left arrow key
             k.send(Keycode.LEFT_ARROW)
-        if right > 10:
+        if up > 10:
             k.send(Keycode.RIGHT_ARROW)
         
         time.sleep(0.1)
