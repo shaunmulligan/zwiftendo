@@ -20,7 +20,19 @@ from adafruit_ble.services.standard import BatteryService
 from board import I2C
 import board
 from digitalio import DigitalInOut, Direction, Pull
+from analogio import AnalogIn
+import neopixel_write
 from pimoroni_trackball import Trackball
+
+# Setup onboard neopixel and set to off state
+pixel = DigitalInOut(board.NEOPIXEL)
+pixel.direction = Direction.OUTPUT
+pixel_bat_low = bytearray([0, 100, 0])
+pixel_off = bytearray([0, 0, 0])
+neopixel_write.neopixel_write(pixel, pixel_off)
+
+# Setup battery voltage level ADC pin
+vbat_voltage = AnalogIn(board.VOLTAGE_MONITOR)
 
 # Setup i2c bus and trackball instance
 i2c = I2C() 
@@ -65,23 +77,34 @@ scan_response = Advertisement()
 ble = adafruit_ble.BLERadio()
 ble.name = "Zwiftendo"
 
-# TODO: move battery checking to loop
-bat.level = 69
+def get_bat_percent(pin):
+    # percentage relavtive to 4.2V max
+    return (((pin.value * 3.3) / 65536 * 2)/4.2)*100
+
 if ble.connected:
     for c in ble.connections:
         c.disconnect()
 
-print("advertising")
+print("Advertising...")
 ble.start_advertising(advertisement, scan_response)
 
 consumer_control = ConsumerControl(hid.devices)
 k = Keyboard(hid.devices)
 kl = KeyboardLayoutUS(k)
 while True:
+
     while not ble.connected:
         pass
     print("Zwiftendo Running:")
     while ble.connected:
+        # Check battery level
+        bat_level = get_bat_percent(vbat_voltage)
+        # Update bluetooth battery level prop
+        bat.level = int(bat_level)
+        # If battery is below 15% light up neopixel red
+        if bat_level < 15:
+            neopixel_write.neopixel_write(pixel, pixel_bat_low)
+        # Set trackball Led Blue now that we are connected   
         trackball.set_rgbw(0, 0, 254, 0)
         up, down, left, right, switch, state = trackball.read()
         if not startBtn.value:
@@ -116,5 +139,7 @@ while True:
             k.send(Keycode.RIGHT_ARROW)
         
         time.sleep(0.1)
+    
+    # If we get disconnected, go back to advertising and light trackball LED green
     ble.start_advertising(advertisement)
     trackball.set_rgbw(0, 254, 0, 0)
