@@ -4,14 +4,14 @@ Zwiftendo is a bluetooth keyboard for controlling zwift and music
 """
 
 # import libs
-import time
-from board import SCL, SDA
+import board
 import busio
+from analogio import AnalogIn
 from micropython import const
 
 from adafruit_seesaw.seesaw import Seesaw
 from adafruit_debouncer import Debouncer
-import tasko
+import tasko # From https://github.com/WarriorOfWire/tasko
 
 from adafruit_hid.keyboard import Keyboard
 from adafruit_hid.keyboard_layout_us import KeyboardLayoutUS
@@ -32,9 +32,12 @@ BUTTON_B = const(7)
 BUTTON_Y = const(9)
 BUTTON_X = const(10)
 BUTTON_SEL = const(14)
- 
+
+# Setup battery voltage level ADC pin
+vbat_voltage = AnalogIn(board.VOLTAGE_MONITOR)
+
 # Setup our i2c but to the Joy Feather
-i2c_bus = busio.I2C(SCL, SDA)
+i2c_bus = busio.I2C(board.SCL, board.SDA)
 ss = Seesaw(i2c_bus)
 
 # Use default HID descriptor
@@ -69,6 +72,10 @@ def make_pin_reader(pin):
     ss.pin_mode(pin, ss.INPUT_PULLUP)
     return lambda: ss.digital_read(pin)
 
+def get_bat_percent(pin):
+    # percentage relavtive to 4.2V max
+    return (((pin.value * 3.3) / 65536 * 2)/4.2)*100
+
 # Create debounced button inputs
 btnA = Debouncer(make_pin_reader(BUTTON_A))
 btnB = Debouncer(make_pin_reader(BUTTON_B))
@@ -76,6 +83,7 @@ btnX = Debouncer(make_pin_reader(BUTTON_X))
 btnY = Debouncer(make_pin_reader(BUTTON_Y))
 btnSel = Debouncer(make_pin_reader(BUTTON_SEL))
 
+# Global state for x,y of joystick :/
 last_x = 0
 last_y = 0
 
@@ -135,19 +143,22 @@ async def read_buttons():
 
 async def update_battery_state():
     """ Update the battery level status """
-    pass
+    # Check battery level
+    bat_level = get_bat_percent(vbat_voltage)
+    print("Battery Level: ", bat_level)
+    # Update bluetooth battery level prop
+    bat.level = int(bat_level)
 
 async def check_ble_connection():
-    print("is advertising? ", ble.advertising )
-    print("ble status: ", ble.connected )
     if not ble.connected and not ble.advertising:
         # Start advertising on BLE
-        print("Advertising...")
+        print("Disconnected going back to advertising...")
         ble.start_advertising(advertisement, scan_response)
 
 # Schedule the workflows at whatever frequency makes sense
 tasko.schedule(hz=7,  coroutine_function=read_joy_stick)
 tasko.schedule(hz=15,  coroutine_function=read_buttons)
-tasko.schedule(hz=1/10, coroutine_function=check_ble_connection)
+tasko.schedule(hz=1/5, coroutine_function=check_ble_connection)
+tasko.schedule(hz=1/60, coroutine_function=update_battery_state)
 # And let tasko do while True
 tasko.run()
