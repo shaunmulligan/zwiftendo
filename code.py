@@ -1,8 +1,17 @@
+
 """
 Zwiftendo is a bluetooth keyboard for controlling zwift and music
 """
-import sys
+
+# import libs
 import time
+from board import SCL, SDA
+import busio
+from micropython import const
+
+from adafruit_seesaw.seesaw import Seesaw
+from adafruit_debouncer import Debouncer
+import tasko
 
 from adafruit_hid.keyboard import Keyboard
 from adafruit_hid.keyboard_layout_us import KeyboardLayoutUS
@@ -17,52 +26,16 @@ from adafruit_ble.services.standard.hid import HIDService
 from adafruit_ble.services.standard.device_info import DeviceInfoService
 from adafruit_ble.services.standard import BatteryService
 
-from board import I2C
-import board
-from digitalio import DigitalInOut, Direction, Pull
-from analogio import AnalogIn
-import neopixel_write
-from pimoroni_trackball import Trackball
-
-# Setup onboard neopixel and set to off state
-pixel = DigitalInOut(board.NEOPIXEL)
-pixel.direction = Direction.OUTPUT
-pixel_bat_low = bytearray([0, 100, 0])
-pixel_off = bytearray([0, 0, 0])
-neopixel_write.neopixel_write(pixel, pixel_off)
-
-# Setup battery voltage level ADC pin
-vbat_voltage = AnalogIn(board.VOLTAGE_MONITOR)
-
-# Setup i2c bus and trackball instance
-i2c = I2C() 
-trackball = Trackball( i2c )
-trackball.set_rgbw(0, 254, 0, 0)
-
-# Setup button 1 (startBtn) on digital pin 9
-startBtn = DigitalInOut(board.D9)
-startBtn.direction = Direction.INPUT
-startBtn.pull = Pull.UP
-
-# Setup button 2 (btn2) on digital pin 10
-btn2 = DigitalInOut(board.D10)
-btn2.direction = Direction.INPUT
-btn2.pull = Pull.UP
-
-# Setup button 3 (btn3) on digital pin 11
-btn3 = DigitalInOut(board.D11)
-btn3.direction = Direction.INPUT
-btn3.pull = Pull.UP
-
-# Setup button 4 (btn4) on digital pin 12
-btn4 = DigitalInOut(board.D12)
-btn4.direction = Direction.INPUT
-btn4.pull = Pull.UP
-
-# Setup button 5 (btn2) on digital pin 13
-btn5 = DigitalInOut(board.D13)
-btn5.direction = Direction.INPUT
-btn5.pull = Pull.UP
+# Define buttons to pin mapping
+BUTTON_A = const(6)
+BUTTON_B = const(7)
+BUTTON_Y = const(9)
+BUTTON_X = const(10)
+BUTTON_SEL = const(14)
+ 
+# Setup our i2c but to the Joy Feather
+i2c_bus = busio.I2C(SCL, SDA)
+ss = Seesaw(i2c_bus)
 
 # Use default HID descriptor
 hid = HIDService()
@@ -77,69 +50,104 @@ scan_response = Advertisement()
 ble = adafruit_ble.BLERadio()
 ble.name = "Zwiftendo"
 
-def get_bat_percent(pin):
-    # percentage relavtive to 4.2V max
-    return (((pin.value * 3.3) / 65536 * 2)/4.2)*100
-
+# Teardown any other BLE connections
 if ble.connected:
     for c in ble.connections:
         c.disconnect()
 
+# Start advertising on BLE
 print("Advertising...")
 ble.start_advertising(advertisement, scan_response)
 
+# Setup bluetooth HID resources
 consumer_control = ConsumerControl(hid.devices)
 k = Keyboard(hid.devices)
 kl = KeyboardLayoutUS(k)
-while True:
 
-    while not ble.connected:
-        pass
-    print("Zwiftendo Running:")
-    while ble.connected:
-        # Check battery level
-        bat_level = get_bat_percent(vbat_voltage)
-        # Update bluetooth battery level prop
-        bat.level = int(bat_level)
-        # If battery is below 15% light up neopixel red
-        if bat_level < 15:
-            neopixel_write.neopixel_write(pixel, pixel_bat_low)
-        # Set trackball Led Blue now that we are connected   
-        trackball.set_rgbw(0, 0, 254, 0)
-        up, down, left, right, switch, state = trackball.read()
-        if not startBtn.value:
-            # If we get a start, trigger applescript on laptop with key combo `ctrl`+`shift`+`=`.
-            k.send(Keycode.CONTROL, Keycode.SHIFT, Keycode.EQUALS)
-        if not btn2.value:
-            # Play or Pause media
-            consumer_control.send(ConsumerControlCode.PLAY_PAUSE)
-        if not btn3.value:
-            # Skip to next track on media
-            consumer_control.send(ConsumerControlCode.SCAN_NEXT_TRACK)
-        if not btn4.value:
-            # Press space bar to trigger powerUp
-            k.send(Keycode.SPACEBAR)
-        if not btn5.value:
-            # Press TAB to skip workout block
-            k.send(Keycode.TAB)
-        # Logic for Trackball controller
-        if state:
-            # Press enter
-            k.send(Keycode.ENTER)
-        if left > 10:
-            # Press up arrow key
-            k.send(Keycode.UP_ARROW)
-        if right > 10:
-            # Press down arrow key
-            k.send(Keycode.DOWN_ARROW)
-        if down > 10:
-            # Press left arrow key
-            k.send(Keycode.LEFT_ARROW)
-        if up > 10:
-            k.send(Keycode.RIGHT_ARROW)
-        
-        time.sleep(0.1)
+def make_pin_reader(pin):
+    """ Creates a pin reader to feed to Debouncer """
+    ss.pin_mode(pin, ss.INPUT_PULLUP)
+    return lambda: ss.digital_read(pin)
+
+# Create debounced button inputs
+btnA = Debouncer(make_pin_reader(BUTTON_A))
+btnB = Debouncer(make_pin_reader(BUTTON_B))
+btnX = Debouncer(make_pin_reader(BUTTON_X))
+btnY = Debouncer(make_pin_reader(BUTTON_Y))
+btnSel = Debouncer(make_pin_reader(BUTTON_SEL))
+
+last_x = 0
+last_y = 0
+
+async def read_joy_stick():
+    """ Read the joystick and send UP,DOWN,LEFT,RIGHT commands"""
+    global last_x
+    global last_y
+    x = ss.analog_read(2)
+    y = ss.analog_read(3)
+ 
+    if (abs(x - last_x) > 40) or (abs(y - last_y) > 40):
+        last_x = x
+        last_y = y
+        if y > 1000:      
+            if ble.connected: k.send(Keycode.RIGHT_ARROW)
+            print("RIGHT")
+        if y < 30:
+            if ble.connected: k.send(Keycode.LEFT_ARROW)
+            print("LEFT")
+        if x > 1000:
+            if ble.connected: k.send(Keycode.DOWN_ARROW)
+            print("DOWN")
+        if x < 30:
+            if ble.connected: k.send(Keycode.UP_ARROW)
+            print("UP")
     
-    # If we get disconnected, go back to advertising and light trackball LED green
-    ble.start_advertising(advertisement)
-    trackball.set_rgbw(0, 254, 0, 0)
+    # await tasko.sleep(1)  # use to wait/sleep in a non-blocking manner
+
+async def read_buttons():
+    """ Scan the buttons on falling edge and send commands """
+    btnA.update()
+    btnB.update()
+    btnX.update()
+    btnY.update()
+    btnSel.update()
+    if btnA.fell:
+        # Send ENTER/RETURN if BLE connected
+        if ble.connected: k.send(Keycode.ENTER)
+        print('A Fell')
+    if btnB.fell:
+        # Skip to next track on media if connected via BLE
+        if ble.connected: consumer_control.send(ConsumerControlCode.SCAN_NEXT_TRACK)
+        print('B Fell')
+    if btnX.fell:
+        # TODO: allow this to be toggled for race or training mode
+        # Press TAB to skip workout block
+        if ble.connected: k.send(Keycode.TAB)
+        print('X Fell')
+    if btnY.fell:
+        # Play or Pause current media
+        consumer_control.send(ConsumerControlCode.PLAY_PAUSE)
+        print('Y Fell')
+    if btnSel.fell:
+        # If we get a start, trigger applescript on laptop with key combo `ctrl`+`shift`+`=`.
+        if ble.connected: k.send(Keycode.CONTROL, Keycode.SHIFT, Keycode.EQUALS)
+        print('Select Fell')
+
+async def update_battery_state():
+    """ Update the battery level status """
+    pass
+
+async def check_ble_connection():
+    print("is advertising? ", ble.advertising )
+    print("ble status: ", ble.connected )
+    if not ble.connected and not ble.advertising:
+        # Start advertising on BLE
+        print("Advertising...")
+        ble.start_advertising(advertisement, scan_response)
+
+# Schedule the workflows at whatever frequency makes sense
+tasko.schedule(hz=7,  coroutine_function=read_joy_stick)
+tasko.schedule(hz=15,  coroutine_function=read_buttons)
+tasko.schedule(hz=1/10, coroutine_function=check_ble_connection)
+# And let tasko do while True
+tasko.run()
