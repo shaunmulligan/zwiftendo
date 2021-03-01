@@ -72,7 +72,7 @@ def make_pin_reader(pin):
     return lambda: ss.digital_read(pin)
 
 def get_bat_percent(pin):
-    # percentage relavtive to 4.2V max
+    # percentage relative to 4.2V max
     return (((pin.value * 3.3) / 65536 * 2)/4.2)*100
 
 # Create debounced button inputs
@@ -82,34 +82,23 @@ btnX = Debouncer(make_pin_reader(BUTTON_X))
 btnY = Debouncer(make_pin_reader(BUTTON_Y))
 btnSel = Debouncer(make_pin_reader(BUTTON_SEL))
 
-# Global state for x,y of joystick :/
-last_x = 0
-last_y = 0
-
 def read_joy_stick():
     """ Read the joystick and send UP,DOWN,LEFT,RIGHT commands"""
-    global last_x
-    global last_y
     x = ss.analog_read(2)
     y = ss.analog_read(3)
- 
-    if (abs(x - last_x) > 40) or (abs(y - last_y) > 40):
-        last_x = x
-        last_y = y
-        if y > 1000:      
-            if ble.connected: k.send(Keycode.RIGHT_ARROW)
-            print("RIGHT")
-        if y < 30:
-            if ble.connected: k.send(Keycode.LEFT_ARROW)
-            print("LEFT")
-        if x > 1000:
-            if ble.connected: k.send(Keycode.DOWN_ARROW)
-            print("DOWN")
-        if x < 30:
-            if ble.connected: k.send(Keycode.UP_ARROW)
-            print("UP")
-    
-    # await tasko.sleep(1)  # use to wait/sleep in a non-blocking manner
+
+    if y > 1000:      
+        if ble.connected: k.send(Keycode.RIGHT_ARROW)
+        print("RIGHT")
+    if y < 30:
+        if ble.connected: k.send(Keycode.LEFT_ARROW)
+        print("LEFT")
+    if x > 1000:
+        if ble.connected: k.send(Keycode.DOWN_ARROW)
+        print("DOWN")
+    if x < 30:
+        if ble.connected: k.send(Keycode.UP_ARROW)
+        print("UP")
 
 def read_buttons():
     """ Scan the buttons on falling edge and send commands """
@@ -149,6 +138,7 @@ def update_battery_state():
     bat.level = int(bat_level)
 
 def check_ble_connection():
+    print("check BLE")
     if not ble.connected and not ble.advertising:
         # Start advertising on BLE
         print("Disconnected going back to advertising...")

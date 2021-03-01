@@ -9,13 +9,25 @@ Tried these two below on micropython esp32 but dont seem to work. I can get macO
 * example here: https://github.com/micropython/micropython/pull/6559/files
 * here: https://gitee.com/walkline/esp32-ble/blob/master/ble/ble_hid.py which seems to be using: https://gitee.com/walkline/micropython-ble-library 
 
-## Trackball:
+### Apple Script Setup:
+
+how to launch an applescript from a keyboard shortcut? https://apple.stackexchange.com/a/276839
+
+Had a problem with making the zwift initial laucher window click the "Let's Go" button, had to hack around it by clicking the menu items as here: https://apple.stackexchange.com/questions/350940/use-applescript-to-raise-and-focus-on-window 
+
+## Unused or discarded ideas:
+### Tasko for eventloop
+https://github.com/WarriorOfWire/tasko/tree/main/tasko
+
+seems like tasko would freeze up the MCU randomly :/
+
+### Trackball:
 Found this repo and pulled the trackball module from it: https://github.com/mchobby/esp8266-upy/blob/master/trackball/lib/trackball.py
 Had to fix it up a bit to get running on esp32 micropython, not sure if the interrupt stuff works yet but should be easy enough to get going. Took a little bit of trial and error to figure out the i2c bus, had to define the pins D22 and D23 in the i2c constructor.
 
 Then rewrote it for circuitpython and created the pimoroni_trackball.py module. It was easy once I figured out the `adafruit_register` module to read and write to `i2c` registers.
 
-## Useful mPy commands:
+### Useful mPy commands:
 connect to wifi:
 ```
 import boot
@@ -32,10 +44,3 @@ list files
 >>> import os                                                                   
 >>> os.listdir() 
 ```
-
-### Apple Script Setup:
-
-how to launch an applescript from a keyboard shortcut? https://apple.stackexchange.com/a/276839
-
-Had a problem with making the zwift initial laucher window click the "Let's Go" button, had to hack around it by clicking the menu items as here: https://apple.stackexchange.com/questions/350940/use-applescript-to-raise-and-focus-on-window 
-
