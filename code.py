@@ -11,7 +11,6 @@ from micropython import const
 
 from adafruit_seesaw.seesaw import Seesaw
 from adafruit_debouncer import Debouncer
-import tasko # From https://github.com/WarriorOfWire/tasko
 
 from adafruit_hid.keyboard import Keyboard
 from adafruit_hid.keyboard_layout_us import KeyboardLayoutUS
@@ -87,7 +86,7 @@ btnSel = Debouncer(make_pin_reader(BUTTON_SEL))
 last_x = 0
 last_y = 0
 
-async def read_joy_stick():
+def read_joy_stick():
     """ Read the joystick and send UP,DOWN,LEFT,RIGHT commands"""
     global last_x
     global last_y
@@ -112,7 +111,7 @@ async def read_joy_stick():
     
     # await tasko.sleep(1)  # use to wait/sleep in a non-blocking manner
 
-async def read_buttons():
+def read_buttons():
     """ Scan the buttons on falling edge and send commands """
     btnA.update()
     btnB.update()
@@ -141,7 +140,7 @@ async def read_buttons():
         if ble.connected: k.send(Keycode.CONTROL, Keycode.SHIFT, Keycode.EQUALS)
         print('Select Fell')
 
-async def update_battery_state():
+def update_battery_state():
     """ Update the battery level status """
     # Check battery level
     bat_level = get_bat_percent(vbat_voltage)
@@ -149,16 +148,18 @@ async def update_battery_state():
     # Update bluetooth battery level prop
     bat.level = int(bat_level)
 
-async def check_ble_connection():
+def check_ble_connection():
     if not ble.connected and not ble.advertising:
         # Start advertising on BLE
         print("Disconnected going back to advertising...")
         ble.start_advertising(advertisement, scan_response)
 
-# Schedule the workflows at whatever frequency makes sense
-tasko.schedule(hz=7,  coroutine_function=read_joy_stick)
-tasko.schedule(hz=15,  coroutine_function=read_buttons)
-tasko.schedule(hz=1/5, coroutine_function=check_ble_connection)
-tasko.schedule(hz=1/60, coroutine_function=update_battery_state)
-# And let tasko do while True
-tasko.run()
+loop_count = 0
+while True:
+    read_joy_stick()
+    read_buttons()
+    loop_count = loop_count + 1
+    if loop_count > 1000:
+        update_battery_state()
+        loop_count = 0
+    check_ble_connection()
